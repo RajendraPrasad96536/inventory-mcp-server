@@ -6,6 +6,6 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
     # Installs dependencies directly from pyproject.toml
-    buildCommand: "pip install --upgrade pip && pip install ."
+    buildCommand: "pip install --upgrade pip && pip install . --no-cache-dir"
     # Standard start command for FastMCP on FastAPI
     startCommand: "python server.py"

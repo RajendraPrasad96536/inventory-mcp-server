@@ -543,4 +543,6 @@ Format numbers with 2 decimal places for currency values."""
 
 # ── Entry point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    mcp.run()
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
