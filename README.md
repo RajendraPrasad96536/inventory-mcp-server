@@ -1,168 +1,72 @@
-# Maharashtra Medicine MCP Server — Cloudflare Workers
+# Maharashtra Medicine Purchase — FastMCP Server
 
-FastMCP server for Maharashtra wholesale medicine purchase analysis,
-deployed as a Python Worker on Cloudflare's global edge network.
+AI-powered MCP server that lets Claude (or any MCP client) analyse
+Maharashtra wholesale medicine purchase data through 10 focused tools.
 
 ---
 
 ## Project Structure
 
 ```
-medicine-mcp-server/
-├── src/
-│   └── worker.py                         ← FastMCP server (all 10 tools)
+medicine_mcp_server/
+├── server.py                         # MCP server (all tools)
 ├── data/
-│   └── maharashtra_wholesale_medicine_purchase.csv   ← upload to R2, not deployed
-├── .github/
-│   └── workflows/
-│       └── deploy.yml                    ← GitHub Actions auto-deploy
-├── wrangler.toml                         ← Cloudflare Workers config
-├── pyproject.toml                        ← Python deps + pywrangler config
+│   └── maharashtra_wholesale_medicine_purchase.csv
+├── pyproject.toml
 └── README.md
 ```
 
 ---
 
-## Architecture
+## Quick Start
 
-```
-MCP Client (Claude Desktop / mcp-remote)
-        │  HTTPS  (Streamable HTTP transport)
-        ▼
-Cloudflare Workers Edge
-  ┌─────────────────────────────┐
-  │  on_fetch()                 │
-  │     │                       │
-  │     ▼                       │
-  │  MedicineServer             │
-  │  (Durable Object)           │
-  │     │                       │
-  │     ├─ FastMCP tools ──────►│ env.GEMINI_API_KEY  (Secret)
-  │     │                       │
-  │     └─ _get_df() ──────────►│ env.MEDICINE_DATA   (R2 bucket)
-  └─────────────────────────────┘
-```
-
-- **CSV data** lives in Cloudflare R2 — fetched once per Worker isolate, then
-  cached in memory for the lifetime of the isolate.
-- **Gemini API key** is stored as a Cloudflare Secret — never in source code.
-- **Transport** is Streamable HTTP at `/mcp` — the current MCP spec standard.
-
----
-
-## One-Time Setup
-
-### Prerequisites
+### 1. Install dependencies
 
 ```bash
-# Node.js 18+  (for wrangler CLI)
-node --version
-
-# Python 3.11+ and uv
-pip install uv
-uv tool install pywrangler
-
-# Wrangler CLI
-npm install -g wrangler
-
-# Authenticate wrangler with your Cloudflare account
-npx wrangler login
+pip install fastmcp pandas google-generativeai
 ```
 
-### Step 1 — Clone & configure
+### 2. Set your Gemini API key (needed only for `natural_language_query`)
 
 ```bash
-git clone https://github.com/YOUR_ORG/medicine-mcp-server.git
-cd medicine-mcp-server
+export GEMINI_API_KEY=AIza...
+# or: export GOOGLE_API_KEY=AIza...
 ```
 
-Open `wrangler.toml` and uncomment + fill in your `account_id`:
+Get a free key at https://aistudio.google.com/app/apikey
 
-```toml
-account_id = "abc123..."    # from dash.cloudflare.com → Overview
-```
-
-### Step 2 — Create the R2 bucket
+### 3. Run locally (stdio transport — Claude Desktop / mcp-remote)
 
 ```bash
-npx wrangler r2 bucket create medicine-mcp-data
+python server.py
 ```
 
-### Step 3 — Upload the CSV to R2
+### 4. Run as HTTP server (SSE transport — Azure App Service / any HTTP host)
+
+```python
+# In server.py, change the last line to:
+mcp.run(transport="sse", host="0.0.0.0", port=8000)
+```
+
+Or pass via CLI:
 
 ```bash
-npx wrangler r2 object put medicine-mcp-data/maharashtra_wholesale_medicine_purchase.csv \
-  --file ./data/maharashtra_wholesale_medicine_purchase.csv
-```
-
-Verify the upload:
-
-```bash
-npx wrangler r2 object get medicine-mcp-data/maharashtra_wholesale_medicine_purchase.csv \
-  --file /tmp/verify.csv && wc -l /tmp/verify.csv
-```
-
-### Step 4 — Store your Gemini API key as a secret
-
-```bash
-npx wrangler secret put GEMINI_API_KEY
-# Paste your key when prompted (get one free at https://aistudio.google.com/app/apikey)
-```
-
-### Step 5 — Deploy
-
-```bash
-uv run pywrangler deploy
-```
-
-Your server is now live at:
-
-```
-https://medicine-mcp-server.<your-account>.workers.dev/mcp
+fastmcp run server.py --transport sse --host 0.0.0.0 --port 8000
 ```
 
 ---
 
-## GitHub Actions Auto-Deploy
-
-Every push to `main` triggers an automatic deploy via `.github/workflows/deploy.yml`.
-
-Add these two secrets in your GitHub repo (**Settings → Secrets and variables → Actions**):
-
-| Secret | Where to find it |
-|---|---|
-| `CLOUDFLARE_API_TOKEN` | dash.cloudflare.com → My Profile → API Tokens → Create Token → "Edit Cloudflare Workers" template |
-| `CLOUDFLARE_ACCOUNT_ID` | dash.cloudflare.com → Overview → API section |
-
-After adding secrets, any `git push origin main` will auto-deploy.
-
----
-
-## Local Development
-
-```bash
-# Start local dev server (uses local R2 simulation — no real R2 calls)
-uv run pywrangler dev
-
-# Server available at http://localhost:8787/mcp
-# Test with MCP Inspector: npx @modelcontextprotocol/inspector http://localhost:8787/mcp
-```
-
----
-
-## Connecting Claude Desktop
-
-Add to `claude_desktop_config.json`:
+## Claude Desktop Config (`claude_desktop_config.json`)
 
 ```json
 {
   "mcpServers": {
     "medicine": {
-      "command": "npx",
-      "args": [
-        "mcp-remote",
-        "https://medicine-mcp-server.<your-account>.workers.dev/mcp"
-      ]
+      "command": "python",
+      "args": ["/path/to/medicine_mcp_server/server.py"],
+      "env": {
+        "GEMINI_API_KEY": "AIza..."
+      }
     }
   }
 }
@@ -170,10 +74,25 @@ Add to `claude_desktop_config.json`:
 
 ---
 
+## Azure App Service Deployment
+
+1. Push the project to your Azure App Service.
+2. Set `ANTHROPIC_API_KEY` as an Application Setting.
+3. Set startup command:
+   ```
+   fastmcp run server.py --transport sse --host 0.0.0.0 --port 8000
+   ```
+4. In Claude Desktop / `mcp-remote`, point to:
+   ```
+   https://<your-app>.azurewebsites.net/sse
+   ```
+
+---
+
 ## Available Tools
 
 | # | Tool | Purpose |
-|---|---|---|
+|---|------|---------|
 | 1 | `search_medicines` | Search by product / manufacturer / supplier / buyer |
 | 2 | `get_invoice_details` | Full line-items for one or more invoices |
 | 3 | `filter_by_schedule` | Filter by drug schedule (H, H1, X, G, OTC) |
@@ -183,37 +102,31 @@ Add to `claude_desktop_config.json`:
 | 7 | `top_products_by_spend` | Ranked products by taxable amount / quantity |
 | 8 | `gst_summary` | CGST / SGST / IGST breakdown by invoice/supplier/buyer |
 | 9 | `cold_chain_and_narcotic_items` | Cold-chain & Schedule X items |
-| 10 | `natural_language_query` | Free-form NL question answered by Gemini |
+| 10 | `natural_language_query` | Free-form NL question answered by Claude |
 
 ---
 
-## Updating the CSV
+## Example Queries (Natural Language Tool)
 
-To replace the CSV with a newer file:
-
-```bash
-npx wrangler r2 object put medicine-mcp-data/maharashtra_wholesale_medicine_purchase.csv \
-  --file ./data/your_new_file.csv
-
-# The Worker's in-memory cache resets automatically on the next isolate cold-start.
-# Force an immediate reset by redeploying:
-uv run pywrangler deploy
-```
+- "Which supplier sold the most Schedule H drugs?"
+- "What is the total GST paid by Ganesh Medical Store?"
+- "List all Cipla products purchased in April 2024."
+- "Which medicines expire before December 2025?"
+- "Show top 5 products by total spend."
+- "Which invoices had the highest discount percentage?"
+- "What is the average MRP of Schedule X drugs?"
 
 ---
 
-## Useful Commands
+## Extending to a Larger Dataset
 
-```bash
-# Stream live logs from production
-uv run pywrangler tail
+The CSV path is set in `server.py`:
 
-# List R2 objects
-npx wrangler r2 object list medicine-mcp-data
-
-# List secrets
-npx wrangler secret list
-
-# Delete a secret
-npx wrangler secret delete GEMINI_API_KEY
+```python
+CSV_PATH = os.path.join(os.path.dirname(__file__), "data", "maharashtra_wholesale_medicine_purchase.csv")
 ```
+
+Replace the CSV with a larger file using the same column schema and restart
+the server. All tools will automatically work on the new data. For datasets
+> 100k rows consider loading into Azure Cognitive Search and replacing the
+`_load_df()` function with search-index queries.

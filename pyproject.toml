@@ -1,34 +1,20 @@
 [build-system]
-requires      = ["hatchling"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name            = "medicine-mcp-server"
-version         = "0.1.0"
-description     = "FastMCP server for Maharashtra wholesale medicine purchase analysis — Cloudflare Workers"
+name = "medicine-mcp-server"
+version = "0.1.0"
+description = "FastMCP server for Maharashtra wholesale medicine purchase analysis"
 requires-python = ">=3.11"
-
-# ── Runtime dependencies (bundled by pywrangler into the Worker) ──────────────
-# All packages must be Pyodide-compatible (pure Python or in Pyodide's set).
-# pandas ✅  fastmcp ✅  google-generativeai ✅  httpx ✅
 dependencies = [
     "fastmcp>=2.0.0",
     "pandas>=2.0.0",
     "google-generativeai>=0.8.0",
-    "httpx>=0.27.0",          # async HTTP client used by google-generativeai on CF
 ]
 
-# ── Dev / CI dependencies ─────────────────────────────────────────────────────
-[project.optional-dependencies]
-dev = [
-    "workers-py>=0.1.0",      # pywrangler CLI — wraps wrangler for Python Workers
-]
+[project.scripts]
+medicine-mcp = "medicine_mcp_server.server:main"
 
-# ── pywrangler — Cloudflare's Python Worker build tool ───────────────────────
-# Install: pip install uv && uv tool install pywrangler
-# Commands mirror wrangler:
-#   uv run pywrangler dev          → local dev server (http://localhost:8787)
-#   uv run pywrangler deploy       → deploy to Cloudflare
-#   uv run pywrangler tail         → stream live logs
-[tool.pywrangler]
-# pywrangler reads wrangler.toml automatically — no extra config needed here.
+[tool.hatch.build.targets.wheel]
+packages = ["medicine_mcp_server"]
