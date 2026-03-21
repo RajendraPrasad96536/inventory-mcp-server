@@ -1,0 +1,47 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Cloudflare Workers — Maharashtra Medicine MCP Server
+# ─────────────────────────────────────────────────────────────────────────────
+
+name                 = "medicine-mcp-server"
+main                 = "src/worker.py"
+compatibility_date   = "2025-03-01"
+compatibility_flags  = ["python_workers"]
+
+# Your Cloudflare Account ID
+# Find it at: https://dash.cloudflare.com → Overview → API section
+account_id = "8c78c64b13c02984dd3873b96f60d51c"   # ← Uncomment and fill in, or set via env
+
+# Workers.dev subdomain — your server will be live at:
+# https://medicine-mcp-server.<your-account>.workers.dev/mcp
+workers_dev = true
+
+
+# ── R2 Bucket binding ─────────────────────────────────────────────────────────
+# Holds the CSV file.
+# Create bucket first:  npx wrangler r2 bucket create medicine-mcp-data
+# Upload CSV:           npx wrangler r2 object put medicine-mcp-data/maharashtra_wholesale_medicine_purchase.csv \
+#                         --file ./data/maharashtra_wholesale_medicine_purchase.csv
+[[r2_buckets]]
+binding     = "MEDICINE_DATA"       # referenced as env.MEDICINE_DATA in worker.py
+bucket_name = "medicine-mcp-data"
+
+
+# ── Durable Object binding ────────────────────────────────────────────────────
+# Keeps the in-memory DataFrame cache alive across requests to the same isolate.
+[[durable_objects.bindings]]
+name       = "MEDICINE_SERVER"      # referenced as env.MEDICINE_SERVER in worker.py
+class_name = "MedicineServer"       # must match the class name in src/worker.py
+
+[[migrations]]
+tag                 = "v1"
+new_sqlite_classes  = ["MedicineServer"]
+
+
+# ── Secrets (set via CLI — never commit values here) ─────────────────────────
+# npx wrangler secret put GEMINI_API_KEY
+# Then enter your key when prompted.
+# The secret is available as:  env.GEMINI_API_KEY  inside worker.py
+#
+# [vars]  ← use this section only for NON-secret public env vars, e.g.:
+# [vars]
+# APP_ENV = "production"

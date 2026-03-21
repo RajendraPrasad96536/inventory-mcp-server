@@ -1,0 +1,65 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .github/workflows/deploy.yml
+#
+# Automatically deploys the Medicine MCP server to Cloudflare Workers
+# on every push (or merged PR) to the `main` branch.
+#
+# Required GitHub Secrets (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN   — from dash.cloudflare.com → My Profile → API Tokens
+#                            Use template: "Edit Cloudflare Workers"
+#   CLOUDFLARE_ACCOUNT_ID  — from dash.cloudflare.com → Overview → API section
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]   # runs checks on PRs but only deploys on push to main
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout code ────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Set up Python ────────────────────────────────────────────────────
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ── 3. Install uv (fast Python package manager) ─────────────────────────
+      - name: Install uv
+        run: pip install uv --quiet
+
+      # ── 4. Install pywrangler (Cloudflare Python Worker CLI) ────────────────
+      - name: Install pywrangler
+        run: uv tool install pywrangler
+
+      # ── 5. Install Node.js (wrangler is a Node package under the hood) ──────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # ── 6. Install Wrangler CLI ──────────────────────────────────────────────
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
+      # ── 7. Lint — quick syntax check before deploying ───────────────────────
+      - name: Lint Python
+        run: python -m py_compile src/worker.py && echo "✅ Syntax OK"
+
+      # ── 8. Deploy to Cloudflare (only on push to main, not on PRs) ──────────
+      - name: Deploy to Cloudflare Workers
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: uv run pywrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
