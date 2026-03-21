@@ -11,3 +11,4 @@ dependencies = [
     "fastapi>=0.100.0",
     "uvicorn>=0.20.0"
 ]
+package-mode = false
