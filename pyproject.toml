@@ -1,23 +1,13 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project]
 name = "medicine-mcp-server"
 version = "0.1.0"
 description = "FastMCP server for Maharashtra wholesale medicine purchase analysis"
-requires-python = ">=3.14.3"
+requires-python = ">=3.11,<3.13"  # Change this line
 dependencies = [
     "fastmcp>=3.0.0",
     "pandas>=2.0.0",
     "google-generativeai>=0.8.0",
-    "openapi-pydantic>=0.4.0",
+    "openapi-pydantic>=0.5.1",
     "fastapi>=0.100.0",
     "uvicorn>=0.20.0"
 ]
-
-[project.scripts]
-medicine-mcp = "medicine_mcp_server.server:main"
-
-[tool.hatch.build.targets.wheel]
-packages = ["medicine_mcp_server"]

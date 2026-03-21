@@ -4,6 +4,6 @@ services:
     runtime: python
     envVars:
       - key: PYTHON_VERSION
-        value: 3.14.3
+        value: 3.11.0  # Change this to a stable version
     buildCommand: "pip install --upgrade pip && pip install . --no-cache-dir"
     startCommand: "python server.py"
