@@ -451,8 +451,7 @@ def cold_chain_and_narcotic_items(
     )
 )
 def natural_language_query(
-    question: str,
-    model: str = "gemini-2.0-flash",   # or "gemini-1.5-pro", "gemini-2.0-flash-lite"
+    question: str
 ) -> dict:
     """
     Args:
@@ -461,7 +460,7 @@ def natural_language_query(
     """
     import google.generativeai as genai
 
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    api_key = 'AIzaSyC7NykEuS-AnsERXS5hBuz2m5B3TizYHTY'
     if not api_key:
         return {
             "error": (
