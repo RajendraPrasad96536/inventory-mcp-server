@@ -17,7 +17,6 @@ Tools exposed:
 import os
 import json
 from datetime import datetime, timedelta
-from typing import Optional
 
 import pandas as pd
 from fastmcp import FastMCP
@@ -67,7 +66,7 @@ mcp = FastMCP(
 )
 def search_medicines(
     query: str,
-    search_in: Optional[str] = "all",   # all | product | manufacturer | supplier | buyer
+    search_in: str = "all",   # all | product | manufacturer | supplier | buyer
     max_results: int = 20,
 ) -> dict:
     """
@@ -151,7 +150,7 @@ def get_invoice_details(invoice_numbers: str) -> dict:
 )
 def filter_by_schedule(
     schedule: str,
-    supplier_name: Optional[str] = None,
+    supplier_name: str = "",
     max_results: int = 50,
 ) -> dict:
     """
@@ -307,7 +306,7 @@ def analyse_buyer(buyer_name: str) -> dict:
 )
 def top_products_by_spend(
     rank_by: str = "taxable_amount",   # taxable_amount | quantity | mrp
-    schedule: Optional[str] = None,
+    schedule: str = "",
     top_n: int = 10,
 ) -> dict:
     """
@@ -351,9 +350,9 @@ def top_products_by_spend(
     )
 )
 def gst_summary(
-    group_by: str = "invoice",          # invoice | supplier | buyer
-    start_date: Optional[str] = None,   # YYYY-MM-DD
-    end_date:   Optional[str] = None,   # YYYY-MM-DD
+    group_by: str = "invoice",   # invoice | supplier | buyer
+    start_date: str = "",        # YYYY-MM-DD
+    end_date: str = "",          # YYYY-MM-DD
 ) -> dict:
     """
     Args:
