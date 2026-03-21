@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: fastmcp-server
+    runtime: python
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    # Installs dependencies directly from pyproject.toml
+    buildCommand: "pip install --upgrade pip && pip install ."
+    # Standard start command for FastMCP on FastAPI
+    startCommand: "python server.py"
