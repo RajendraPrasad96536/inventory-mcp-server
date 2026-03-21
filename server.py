@@ -545,4 +545,4 @@ Format numbers with 2 decimal places for currency values."""
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run(mcp, host="0.0.0.0", port=port)
+    uvicorn.run(mcp.http_app(), host="0.0.0.0", port=port)
