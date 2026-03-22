@@ -510,7 +510,7 @@ If the question involves calculations, show the working.
 Format numbers with 2 decimal places for currency values."""
 
     gemini = genai.GenerativeModel(
-        model_name=model,
+        model_name='gemini-2.0-flash',
         system_instruction=system_prompt,
     )
 
@@ -533,7 +533,7 @@ Format numbers with 2 decimal places for currency values."""
 
     return {
         "question": question,
-        "model_used": model,
+        "model_used": 'gemini-2.0-flash',
         "answer": answer,
         "tokens_used": tokens_used,
     }
