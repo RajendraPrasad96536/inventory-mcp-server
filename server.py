@@ -460,7 +460,7 @@ def natural_language_query(
     """
     import google.generativeai as genai
 
-    api_key = 'AIzaSyC7NykEuS-AnsERXS5hBuz2m5B3TizYHTY'
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not api_key:
         return {
             "error": (
